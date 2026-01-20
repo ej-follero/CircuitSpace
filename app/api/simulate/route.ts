@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
+import { createServerSupabase } from "@/lib/supabase/server";
 import type { SimulationResult } from "@/lib/types";
+
+// Helper function to hash code
+async function hashCode(code: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(code);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 // Mock IoT hardware APIs
 const mockHardware = {
@@ -26,7 +36,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { code, language } = await request.json();
+    const body = await request.json();
+    const { code, language, projectId } = body;
 
     if (!code || typeof code !== "string") {
       return NextResponse.json({ error: "Invalid code" }, { status: 400 });
@@ -100,6 +111,45 @@ export async function POST(request: NextRequest) {
         errors,
         output,
       };
+
+      // Save simulation to database if projectId is provided
+      const requestBody = await request.json();
+      const projectId = requestBody?.projectId;
+      if (projectId && typeof projectId === "string") {
+        try {
+          const supabase = await createServerSupabase();
+          
+          // Get user ID from Supabase
+          const { data: userData } = await supabase
+            .from("users")
+            .select("id")
+            .eq("clerk_id", user.id)
+            .single();
+
+          if (userData) {
+            // Generate code hash for deduplication
+            const codeHash = await hashCode(code);
+            
+            const { error: simError } = await supabase
+              .from("simulations")
+              .insert({
+                project_id: projectId,
+                code_hash: codeHash,
+                logs: logs,
+                metrics: metrics,
+                duration_ms: executionTime,
+                inputs: { language },
+              });
+
+            if (simError) {
+              console.error("Failed to save simulation:", simError);
+            }
+          }
+        } catch (dbError) {
+          console.error("Database error saving simulation:", dbError);
+          // Don't fail the request if DB save fails
+        }
+      }
 
       return NextResponse.json(simulationResult);
     } catch (error: any) {

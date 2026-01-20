@@ -1,0 +1,19 @@
+{
+  "name": "Smart Light Control",
+  "description": "Automated lighting system with brightness control",
+  "code": "const LED = {\n  brightness: 0,\n  state: false,\n  \n  setBrightness: function(value) {\n    this.brightness = Math.max(0, Math.min(100, value));\n    this.state = this.brightness > 0;\n    console.log(`LED brightness: ${this.brightness}%`);\n  },\n  \n  turnOn: function() {\n    this.state = true;\n    this.brightness = 100;\n    console.log('LED turned ON');\n  },\n  \n  turnOff: function() {\n    this.state = false;\n    this.brightness = 0;\n    console.log('LED turned OFF');\n  }\n};\n\nfunction autoBrightness(ambientLight) {\n  if (ambientLight < 30) {\n    LED.setBrightness(100);\n  } else if (ambientLight < 60) {\n    LED.setBrightness(50);\n  } else {\n    LED.setBrightness(0);\n  }\n}\n\n// Simulate ambient light sensor\nsetInterval(() => {\n  const ambientLight = Math.random() * 100;\n  autoBrightness(ambientLight);\n}, 2000);",
+  "language": "javascript",
+  "devices": [
+    {
+      "type": "LED",
+      "model": "WS2812B",
+      "position": { "x": 0, "y": 0, "z": -5 }
+    },
+    {
+      "type": "Light Sensor",
+      "model": "BH1750",
+      "position": { "x": 2, "y": 0, "z": -5 }
+    }
+  ],
+  "category": "actuators"
+}

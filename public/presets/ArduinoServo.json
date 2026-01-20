@@ -1,0 +1,14 @@
+{
+  "name": "Arduino Servo Control",
+  "description": "Control servo motor with Arduino",
+  "code": "// Arduino Servo Control\n#include <Servo.h>\n\nServo myServo;\nint servoPin = 9;\nint angle = 0;\nint step = 5;\n\nvoid setup() {\n  myServo.attach(servoPin);\n  Serial.begin(9600);\n  Serial.println(\"Servo Control Started\");\n  myServo.write(0);\n}\n\nvoid loop() {\n  angle += step;\n  \n  if (angle >= 180 || angle <= 0) {\n    step = -step;\n  }\n  \n  myServo.write(angle);\n  Serial.print(\"Angle: \");\n  Serial.println(angle);\n  delay(50);\n}",
+  "language": "arduino",
+  "devices": [
+    {
+      "type": "Servo Motor",
+      "model": "SG90",
+      "position": { "x": 0, "y": 0, "z": -5 }
+    }
+  ],
+  "category": "arduino"
+}

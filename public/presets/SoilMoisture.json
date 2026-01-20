@@ -1,0 +1,19 @@
+{
+  "name": "Soil Moisture Monitor",
+  "description": "Monitor soil moisture and automate watering",
+  "code": "const SoilSensor = {\n  read: () => {\n    return Math.random() * 100;\n  }\n};\n\nconst WaterPump = {\n  state: false,\n  \n  start: function() {\n    this.state = true;\n    console.log('Water pump started');\n  },\n  \n  stop: function() {\n    this.state = false;\n    console.log('Water pump stopped');\n  }\n};\n\nconst MOISTURE_THRESHOLD = 30;\nconst WATERING_DURATION = 5000;\n\nfunction checkMoisture() {\n  const moisture = SoilSensor.read();\n  console.log(`Soil moisture: ${moisture.toFixed(1)}%`);\n  \n  if (moisture < MOISTURE_THRESHOLD && !WaterPump.state) {\n    console.log('Moisture low, starting irrigation...');\n    WaterPump.start();\n    \n    setTimeout(() => {\n      WaterPump.stop();\n      console.log('Irrigation complete');\n    }, WATERING_DURATION);\n  }\n  \n  return { moisture, pumpActive: WaterPump.state };\n}\n\n// Check every 10 seconds\nsetInterval(checkMoisture, 10000);",
+  "language": "javascript",
+  "devices": [
+    {
+      "type": "Moisture Sensor",
+      "model": "FC-28",
+      "position": { "x": 0, "y": 0, "z": -5 }
+    },
+    {
+      "type": "Water Pump",
+      "model": "Mini Submersible",
+      "position": { "x": 2, "y": 0, "z": -5 }
+    }
+  ],
+  "category": "sensors"
+}

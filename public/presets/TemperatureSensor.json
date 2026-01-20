@@ -1,0 +1,14 @@
+{
+  "name": "Temperature Sensor",
+  "description": "Monitor temperature readings with DHT22 sensor",
+  "code": "const DHT22 = {\n  read: () => {\n    return {\n      temperature: 22.5 + Math.random() * 5,\n      humidity: 45 + Math.random() * 10,\n      timestamp: Date.now()\n    };\n  }\n};\n\nconst readings = [];\nconst threshold = 25;\n\nfunction monitorTemperature() {\n  const data = DHT22.read();\n  readings.push(data);\n  \n  if (data.temperature > threshold) {\n    console.log(`Alert: Temperature ${data.temperature.toFixed(1)}°C exceeds threshold`);\n    return { alert: true, temperature: data.temperature };\n  }\n  \n  return { alert: false, temperature: data.temperature };\n}\n\n// Monitor every 5 seconds\nsetInterval(() => {\n  const result = monitorTemperature();\n  console.log(`Temperature: ${result.temperature.toFixed(1)}°C`);\n}, 5000);",
+  "language": "javascript",
+  "devices": [
+    {
+      "type": "Temperature Sensor",
+      "model": "DHT22",
+      "position": { "x": 0, "y": 0, "z": -5 }
+    }
+  ],
+  "category": "sensors"
+}

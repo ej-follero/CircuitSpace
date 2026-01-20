@@ -1,0 +1,14 @@
+{
+  "name": "Motion Detector",
+  "description": "PIR motion sensor with alert system",
+  "code": "const PIR = {\n  detect: () => {\n    return Math.random() > 0.7;\n  }\n};\n\nlet motionDetected = false;\nlet lastDetection = null;\n\nfunction checkMotion() {\n  const detected = PIR.detect();\n  \n  if (detected && !motionDetected) {\n    motionDetected = true;\n    lastDetection = Date.now();\n    console.log('Motion detected!');\n    triggerAlert();\n  } else if (!detected && motionDetected) {\n    motionDetected = false;\n    const duration = Date.now() - lastDetection;\n    console.log(`Motion ended after ${duration}ms`);\n  }\n  \n  return motionDetected;\n}\n\nfunction triggerAlert() {\n  console.log('ALERT: Motion detected in area');\n  return { alert: true, timestamp: Date.now() };\n}\n\n// Check motion every second\nsetInterval(checkMotion, 1000);",
+  "language": "javascript",
+  "devices": [
+    {
+      "type": "Motion Sensor",
+      "model": "HC-SR501",
+      "position": { "x": 0, "y": 0, "z": -5 }
+    }
+  ],
+  "category": "sensors"
+}

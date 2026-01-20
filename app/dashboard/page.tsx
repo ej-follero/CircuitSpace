@@ -7,15 +7,22 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { MonacoEditor } from "@/components/editor/monaco-editor";
+import { PresetSelector } from "@/components/editor/preset-selector";
+import { CollabRoom } from "@/components/collaboration/collab-room";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Play, Save, Share2, Download, FileDown, Plus, Code, Zap, BarChart3 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { Project, SimulationResult } from "@/lib/types";
-import { exportToPDF, exportToDocker, exportToArduino } from "@/lib/export";
+import type { Preset } from "@/lib/presets";
+import { exportToPDF, exportToDocker, exportToArduino, exportToJSON, exportToCSV, exportToExcel } from "@/lib/export";
+import { SimulationMetricsChart } from "@/components/charts/simulation-metrics-chart";
+import { ProjectStatsChart } from "@/components/charts/project-stats-chart";
+import { ActivityChart } from "@/components/charts/activity-chart";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
@@ -56,11 +63,25 @@ checkIn(cardId);
     recentActivity: 0,
   });
   const [isLoadingStats, setIsLoadingStats] = useState(true);
+  const [currentProjectId, setCurrentProjectId] = useState<string | undefined>();
+  const [collabEnabled, setCollabEnabled] = useState(false);
 
   useEffect(() => {
     loadProjects();
     loadStats();
   }, []);
+
+  useEffect(() => {
+    // Enable collaboration if a project is selected
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectParam = urlParams.get("project");
+    if (projectParam) {
+      setCurrentProjectId(projectParam);
+      setCollabEnabled(true);
+    } else if (projects.length > 0) {
+      setCurrentProjectId(projects[0].id);
+    }
+  }, [projects]);
 
   const loadProjects = async () => {
     try {
@@ -99,10 +120,11 @@ checkIn(cardId);
   const handleRun = async () => {
     setIsRunning(true);
     try {
+      const projectId = projects.length > 0 ? projects[0].id : undefined;
       const response = await fetch("/api/simulate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code, language }),
+        body: JSON.stringify({ code, language, projectId }),
       });
 
       if (!response.ok) {
@@ -156,15 +178,20 @@ checkIn(cardId);
     }
   };
 
+  const handlePresetSelect = (preset: Preset) => {
+    setCode(preset.code);
+    setLanguage(preset.language);
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Welcome Section */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Welcome back{user?.firstName ? `, ${user.firstName}` : ""}!</h1>
-          <p className="text-muted-foreground">Build, simulate, and visualize your IoT projects</p>
+          <h1 className="text-2xl font-bold sm:text-3xl">Welcome back{user?.firstName ? `, ${user.firstName}` : ""}!</h1>
+          <p className="text-sm text-muted-foreground sm:text-base">Build, simulate, and visualize your IoT projects</p>
         </div>
-        <Button asChild>
+        <Button asChild className="w-full sm:w-auto">
           <Link href="/dashboard/projects">
             <Plus className="mr-2 h-4 w-4" />
             New Project
@@ -277,16 +304,17 @@ checkIn(cardId);
       {/* Code Editor Section */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle>Code Editor</CardTitle>
               <CardDescription>Write and test your IoT code</CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <PresetSelector onSelectPreset={handlePresetSelect} currentLanguage={language} />
               <Tabs value={language} onValueChange={(v) => setLanguage(v as "javascript" | "arduino")}>
-                <TabsList>
-                  <TabsTrigger value="javascript">JavaScript</TabsTrigger>
-                  <TabsTrigger value="arduino">Arduino</TabsTrigger>
+                <TabsList className="w-full sm:w-auto">
+                  <TabsTrigger value="javascript" className="flex-1 sm:flex-none">JavaScript</TabsTrigger>
+                  <TabsTrigger value="arduino" className="flex-1 sm:flex-none">Arduino</TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>
@@ -294,7 +322,7 @@ checkIn(cardId);
         </CardHeader>
         <CardContent>
           <Suspense fallback={<EditorSkeleton />}>
-            <div className="border rounded-lg overflow-hidden mb-4" style={{ height: "400px" }}>
+            <div className="border rounded-lg overflow-hidden mb-4" style={{ height: "min(400px, 50vh)" }}>
               <MonacoEditor
                 value={code}
                 onChange={(value) => setCode(value || "")}
@@ -302,12 +330,12 @@ checkIn(cardId);
                 height="100%"
               />
             </div>
-            <div className="flex gap-2">
-              <Button onClick={handleRun} disabled={isRunning}>
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={handleRun} disabled={isRunning} className="flex-1 sm:flex-none">
                 <Play className="mr-2 h-4 w-4" />
                 {isRunning ? "Running..." : "Run Simulation"}
               </Button>
-              <Button onClick={handleSave} variant="outline">
+              <Button onClick={handleSave} variant="outline" className="flex-1 sm:flex-none">
                 <Save className="mr-2 h-4 w-4" />
                 Save Project
               </Button>
@@ -319,6 +347,21 @@ checkIn(cardId);
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
+                  <DropdownMenuItem onClick={async () => {
+                    const tempProject: Project = {
+                      id: 'temp',
+                      name: 'Current Project',
+                      code,
+                      language,
+                      description: undefined,
+                      createdAt: new Date(),
+                      updatedAt: new Date(),
+                      userId: user?.id || '',
+                    };
+                    await exportToPDF(tempProject, simulationResult || undefined);
+                  }}>
+                    Export as PDF
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => {
                     const tempProject: Project = {
                       id: 'temp',
@@ -330,10 +373,41 @@ checkIn(cardId);
                       updatedAt: new Date(),
                       userId: user?.id || '',
                     };
-                    exportToPDF(tempProject);
+                    exportToJSON(tempProject, simulationResult || undefined);
                   }}>
-                    Export as PDF
+                    Export as JSON
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    const tempProject: Project = {
+                      id: 'temp',
+                      name: 'Current Project',
+                      code,
+                      language,
+                      description: undefined,
+                      createdAt: new Date(),
+                      updatedAt: new Date(),
+                      userId: user?.id || '',
+                    };
+                    exportToCSV(tempProject, simulationResult || undefined);
+                  }}>
+                    Export as CSV
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={async () => {
+                    const tempProject: Project = {
+                      id: 'temp',
+                      name: 'Current Project',
+                      code,
+                      language,
+                      description: undefined,
+                      createdAt: new Date(),
+                      updatedAt: new Date(),
+                      userId: user?.id || '',
+                    };
+                    await exportToExcel(tempProject, simulationResult || undefined);
+                  }}>
+                    Export as Excel
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => {
                     const tempProject: Project = {
                       id: 'temp',
@@ -373,61 +447,131 @@ checkIn(cardId);
 
       {/* Simulation Results */}
       {simulationResult && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Simulation Results</CardTitle>
-            <CardDescription>Execution output and metrics</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {simulationResult.logs && simulationResult.logs.length > 0 && (
-                <div>
-                  <h3 className="font-semibold mb-2">Logs</h3>
-                  <div className="bg-muted p-4 rounded-lg font-mono text-sm max-h-48 overflow-auto">
-                    {simulationResult.logs.map((log, i) => (
-                      <div key={i}>{log}</div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {simulationResult.metrics && (
-                <div>
-                  <h3 className="font-semibold mb-2">Metrics</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">CPU Usage</p>
-                      <p className="text-2xl font-bold">{simulationResult.metrics.cpu}%</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Memory</p>
-                      <p className="text-2xl font-bold">{simulationResult.metrics.memory}MB</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Execution Time</p>
-                      <p className="text-2xl font-bold">{simulationResult.metrics.executionTime}ms</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Data Transferred</p>
-                      <p className="text-2xl font-bold">{simulationResult.metrics.dataTransferred}B</p>
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle>Simulation Results</CardTitle>
+              <CardDescription>Execution output and metrics</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {simulationResult.logs && simulationResult.logs.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold mb-2">Logs</h3>
+                    <div className="bg-muted p-4 rounded-lg font-mono text-sm max-h-48 overflow-auto">
+                      {simulationResult.logs.map((log, i) => (
+                        <div key={i}>{log}</div>
+                      ))}
                     </div>
                   </div>
-                </div>
-              )}
-              {simulationResult.errors && simulationResult.errors.length > 0 && (
-                <div>
-                  <h3 className="font-semibold mb-2 text-destructive">Errors</h3>
-                  <div className="bg-destructive/10 p-4 rounded-lg">
-                    {simulationResult.errors.map((error, i) => (
-                      <div key={i} className="text-sm text-destructive">
-                        Line {error.line}: {error.message}
+                )}
+                {simulationResult.metrics && (
+                  <div>
+                    <h3 className="font-semibold mb-2">Metrics</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">CPU Usage</p>
+                        <p className="text-2xl font-bold">{simulationResult.metrics.cpu}%</p>
                       </div>
-                    ))}
+                      <div>
+                        <p className="text-sm text-muted-foreground">Memory</p>
+                        <p className="text-2xl font-bold">{simulationResult.metrics.memory}MB</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Execution Time</p>
+                        <p className="text-2xl font-bold">{simulationResult.metrics.executionTime}ms</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Data Transferred</p>
+                        <p className="text-2xl font-bold">{simulationResult.metrics.dataTransferred}B</p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                )}
+                {simulationResult.errors && simulationResult.errors.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold mb-2 text-destructive">Errors</h3>
+                    <div className="bg-destructive/10 p-4 rounded-lg">
+                      {simulationResult.errors.map((error, i) => (
+                        <div key={i} className="text-sm text-destructive">
+                          Line {error.line}: {error.message}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Simulation Metrics Chart */}
+          <SimulationMetricsChart
+            data={[
+              {
+                time: "0s",
+                cpu: 0,
+                memory: 0,
+                executionTime: 0,
+              },
+              {
+                time: "1s",
+                cpu: simulationResult.metrics.cpu * 0.5,
+                memory: simulationResult.metrics.memory * 0.5,
+                executionTime: simulationResult.metrics.executionTime * 0.5,
+              },
+              {
+                time: "2s",
+                cpu: simulationResult.metrics.cpu,
+                memory: simulationResult.metrics.memory,
+                executionTime: simulationResult.metrics.executionTime,
+              },
+            ]}
+          />
+        </>
+      )}
+
+      {/* Project Statistics Charts */}
+      {projects.length > 0 && (
+        <ProjectStatsChart
+          projectsByLanguage={[
+            {
+              language: "JavaScript",
+              count: projects.filter((p) => p.language === "javascript").length,
+            },
+            {
+              language: "Arduino",
+              count: projects.filter((p) => p.language === "arduino").length,
+            },
+          ]}
+          projectsByMonth={(() => {
+            const monthMap = new Map<string, number>();
+            projects.forEach((project) => {
+              const month = new Date(project.createdAt).toLocaleDateString("en-US", {
+                month: "short",
+                year: "numeric",
+              });
+              monthMap.set(month, (monthMap.get(month) || 0) + 1);
+            });
+            return Array.from(monthMap.entries())
+              .map(([month, count]) => ({ month, count }))
+              .slice(-6);
+          })()}
+        />
+      )}
+
+      {/* Collaboration Room */}
+      {currentProjectId && collabEnabled && (
+        <CollabRoom
+          roomId={currentProjectId}
+          projectId={currentProjectId}
+          enabled={collabEnabled}
+          onCodeChange={(newCode) => {
+            setCode(newCode);
+          }}
+          onLanguageChange={(newLanguage) => {
+            setLanguage(newLanguage);
+          }}
+        />
       )}
     </div>
   );

@@ -1,0 +1,14 @@
+{
+  "name": "Arduino LED Blink",
+  "description": "Classic Arduino blinking LED example",
+  "code": "// Arduino LED Blink Example\nint ledPin = 13;\nint delayTime = 1000;\n\nvoid setup() {\n  pinMode(ledPin, OUTPUT);\n  Serial.begin(9600);\n  Serial.println(\"LED Blink Started\");\n}\n\nvoid loop() {\n  digitalWrite(ledPin, HIGH);\n  Serial.println(\"LED ON\");\n  delay(delayTime);\n  \n  digitalWrite(ledPin, LOW);\n  Serial.println(\"LED OFF\");\n  delay(delayTime);\n}",
+  "language": "arduino",
+  "devices": [
+    {
+      "type": "LED",
+      "model": "Built-in",
+      "position": { "x": 0, "y": 0, "z": -5 }
+    }
+  ],
+  "category": "arduino"
+}
