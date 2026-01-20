@@ -131,7 +131,7 @@ export default function HomePage() {
               </div>
               <CardTitle className="text-xl">AR Visualization</CardTitle>
               <CardDescription className="mt-2 text-base">
-                WebGL and AR.js integration for immersive 3D device visualization in your environment
+                WebGL and WebXR integration for immersive 3D device visualization in your environment
               </CardDescription>
             </CardHeader>
           </Card>

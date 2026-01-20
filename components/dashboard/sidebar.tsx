@@ -23,9 +23,15 @@ export function Sidebar({ isOpen: controlledIsOpen, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const { user } = useUser();
   const [internalIsOpen, setInternalIsOpen] = useState(true);
+  const [mounted, setMounted] = useState(false);
   
   // Use controlled state if provided, otherwise use internal state
   const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
+  
+  // Only render UserButton on client to avoid hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   const handleToggle = () => {
     if (onToggle) {
@@ -69,6 +75,7 @@ export function Sidebar({ isOpen: controlledIsOpen, onToggle }: SidebarProps) {
             onClick={handleToggle}
             className="h-8 w-8"
             title="Close sidebar"
+            suppressHydrationWarning
           >
             <X className="h-5 w-5" />
           </Button>
@@ -92,6 +99,7 @@ export function Sidebar({ isOpen: controlledIsOpen, onToggle }: SidebarProps) {
                     "w-full justify-start",
                     isActive && "bg-secondary font-medium"
                   )}
+                  suppressHydrationWarning
                 >
                   <Icon className="mr-2 h-4 w-4" />
                   <span>{item.name}</span>
@@ -101,15 +109,19 @@ export function Sidebar({ isOpen: controlledIsOpen, onToggle }: SidebarProps) {
           })}
         </nav>
         <div className="border-t p-4">
-          <div className="mb-2 flex items-center gap-2">
-            <UserButton />
+          <div className="mb-2 flex items-center gap-2" suppressHydrationWarning>
+            {mounted ? (
+              <UserButton />
+            ) : (
+              <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
+            )}
             <div className="flex-1">
               <p className="text-sm font-medium">{user?.fullName || "User"}</p>
               <p className="text-xs text-muted-foreground">{user?.primaryEmailAddress?.emailAddress}</p>
             </div>
           </div>
           <SignOutButton>
-            <Button variant="ghost" className="w-full justify-start">
+            <Button variant="ghost" className="w-full justify-start" suppressHydrationWarning>
               <LogOut className="mr-2 h-4 w-4" />
               <span>Sign Out</span>
             </Button>

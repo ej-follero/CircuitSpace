@@ -18,6 +18,16 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
   
+  // Rewrite manifest.json to API route
+  async rewrites() {
+    return [
+      {
+        source: '/manifest.json',
+        destination: '/api/manifest',
+      },
+    ];
+  },
+  
   // PWA support
   async headers() {
     return [
@@ -59,6 +69,13 @@ const nextConfig = {
       fs: false,
       net: false,
       tls: false,
+    };
+
+    // Ensure Three.js resolves to a single instance
+    // This prevents "Multiple instances of Three.js" warnings
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      three: path.resolve(__dirname, 'node_modules/three'),
     };
 
     // Optimize bundle size

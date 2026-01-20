@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { MonacoEditor } from "@/components/editor/monaco-editor";
 import { PresetSelector } from "@/components/editor/preset-selector";
 import { CollabRoom } from "@/components/collaboration/collab-room";
+import { ARScene } from "@/components/ar-canvas/ar-scene";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Play, Save, Share2, Download, FileDown, Plus, Code, Zap, BarChart3 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -255,7 +256,7 @@ checkIn(cardId);
                 View All Projects
               </Link>
             </Button>
-            <Button onClick={handleSave} className="w-full justify-start" variant="outline">
+            <Button onClick={handleSave} className="w-full justify-start" variant="outline" suppressHydrationWarning>
               <Save className="mr-2 h-4 w-4" />
               Save Current Project
             </Button>
@@ -529,6 +530,11 @@ checkIn(cardId);
           />
         </>
       )}
+
+      {/* AR Visualization */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <ARScene />
+      </div>
 
       {/* Project Statistics Charts */}
       {projects.length > 0 && (

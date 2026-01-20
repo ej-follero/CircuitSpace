@@ -5,10 +5,11 @@
 
 const { createServer } = require("http");
 const { parse } = require("url");
+const { readFileSync } = require("fs");
+const { join } = require("path");
 const next = require("next");
 // Note: Socket.io server initialization
-// For production, consider using a separate WebSocket service
-// or Vercel's Edge Functions with WebSocket support
+
 let io = null;
 
 function initializeSocketIO(httpServer) {
@@ -136,6 +137,25 @@ app.prepare().then(() => {
   const httpServer = createServer(async (req, res) => {
     try {
       const parsedUrl = parse(req.url, true);
+      
+      // Handle manifest.json explicitly
+      if (parsedUrl.pathname === '/manifest.json') {
+        try {
+          const manifestPath = join(process.cwd(), 'public', 'manifest.json');
+          const manifestContent = readFileSync(manifestPath, 'utf-8');
+          res.setHeader('Content-Type', 'application/manifest+json');
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          res.statusCode = 200;
+          res.end(manifestContent);
+          return;
+        } catch (err) {
+          console.error('Error serving manifest.json:', err);
+          res.statusCode = 404;
+          res.end('Manifest not found');
+          return;
+        }
+      }
+      
       await handle(req, res, parsedUrl);
     } catch (err) {
       console.error("Error occurred handling", req.url, err);

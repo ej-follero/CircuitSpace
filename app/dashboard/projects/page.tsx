@@ -143,6 +143,7 @@ export default function ProjectsPage() {
                     size="icon"
                     onClick={() => handleDelete(project.id)}
                     aria-label="Delete project"
+                    suppressHydrationWarning
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
