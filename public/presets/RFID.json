@@ -1,0 +1,13 @@
+{
+  "name": "RFID Attendance System",
+  "description": "A simple RFID-based attendance tracking system",
+  "code": "const RFID = {\n  scan: () => {\n    const cards = ['CARD001', 'CARD002', 'CARD003'];\n    return cards[Math.floor(Math.random() * cards.length)];\n  }\n};\n\nconst attendance = new Set();\n\nfunction checkIn(cardId) {\n  if (attendance.has(cardId)) {\n    console.log(`Card ${cardId} already checked in`);\n    return false;\n  }\n  attendance.add(cardId);\n  console.log(`Card ${cardId} checked in successfully`);\n  return true;\n}\n\n// Simulate RFID scan\nconst cardId = RFID.scan();\ncheckIn(cardId);",
+  "language": "javascript",
+  "devices": [
+    {
+      "type": "RFID Reader",
+      "model": "MFRC522",
+      "position": { "x": 0, "y": 0, "z": -5 }
+    }
+  ]
+}
